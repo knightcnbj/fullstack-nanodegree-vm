@@ -1,0 +1,10 @@
+{% extends "main.html" %}
+{% block content %}
+<form action="{{ url_for('new_item', category_id=category.id) }}" method="post">
+    <label for="name">Name:</label>
+    <input type="text" class="form-control" maxlength="100" name="name">
+    <label for="description">Description:</label>
+    <textarea maxlength="250" rows="3" name="description" placeholder="description of item"></textarea>
+    <button type="submit">Create</button>
+</form>
+{% endblock %}

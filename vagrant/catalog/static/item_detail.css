@@ -1,0 +1,14 @@
+.navigation-bar {
+	height: 100px;
+	background-color: azure;
+}
+
+.button {
+    display: inline-block;
+    padding: 20px;
+}
+
+.item-name {
+    position: center;
+
+}

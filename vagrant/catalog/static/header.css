@@ -1,0 +1,14 @@
+.header {
+	height: 100px;
+	background-color: aliceblue;
+}
+
+.home-button {
+	display: inline-block;
+	padding: 20px;
+}
+
+.log-button {
+	display: inline-block;
+  	padding: 20px;
+}

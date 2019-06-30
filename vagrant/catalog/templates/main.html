@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<link rel="stylesheet" type=text/css href="{{ url_for('static', filename='header.css') }}">
+	<link rel="stylesheet" type=text/css href="{{ url_for('static', filename='catalog.css') }}">
+	<link rel="stylesheet" type=text/css href="{{ url_for('static', filename='items.css') }}">
+	<link rel="stylesheet" type=text/css href="{{ url_for('static', filename='item_detail.css') }}">
+</head>
+<body>
+	<ul class="header">
+		{% include "header.html" %}
+		{% include "flash_message.html" %}
+	</ul>
+	<div class="content">
+		{% block content %}
+		{% endblock %}
+	</div>
+</body>
+</html>
