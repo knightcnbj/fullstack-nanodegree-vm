@@ -32,6 +32,7 @@ DBSession = sessionmaker(bind=engine)
 #         return redirect('/login')
 
 
+# login page
 @app.route('/login')
 def show_login():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
@@ -40,6 +41,7 @@ def show_login():
     return render_template('login.html', STATE=state)
 
 
+# login logic
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     if request.args.get('state') != login_session['state']:
@@ -240,6 +242,7 @@ def new_item(category_id):
             name=request.form['name'],
             description=request.form['description'],
             category_id=category_id,
+            user_email=login_session['email'],
         )
         session.add(item)
         session.commit()
@@ -257,6 +260,8 @@ def edit_item(category_id, item_id):
         return redirect('/login')
     session = DBSession()
     edited_item = session.query(Item).filter_by(id=item_id).one()
+    if edited_item.user_email != login_session['email']:
+        return render_template('unauthorized.html')
     categories = session.query(Category)
     if request.method == 'POST':
         if request.form['name']:
@@ -283,6 +288,8 @@ def delete_item(category_id, item_id):
         return redirect('/login')
     session = DBSession()
     deleted_item = session.query(Item).filter_by(id=item_id).one()
+    if deleted_item.user_email != login_session['email']:
+        return render_template('unauthorized.html')
     if request.method == 'POST':
         session.delete(deleted_item)
         session.commit()

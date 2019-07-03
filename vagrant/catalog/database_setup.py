@@ -15,7 +15,6 @@ class Category(Base):
 
     @property
     def serialize(self):
-        """return obj data in an easily serializeable format"""
         return {
             'name': self.name,
             'id': self.id,
@@ -29,16 +28,17 @@ class Item(Base):
     name = Column(String(80), nullable=False)
     description = Column(String(80))
     category_id = Column(Integer, ForeignKey('category.id'))
+    user_email = Column(String(250), nullable=False)
 
     category = relationship(Category)
 
     @property
     def serialize(self):
-        """return obj data in an easily serializeable format"""
         return {
             'name': self.name,
             'id': self.id,
             'description': self.description,
+            'user_email': self.user_email,
         }
 
 
