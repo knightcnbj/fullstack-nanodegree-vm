@@ -27,14 +27,9 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 
 
-# def require_login():
-#     if 'username' not in login_session:
-#         return redirect('/login')
-
-
-# login page
 @app.route('/login')
 def show_login():
+    """login page"""
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in range(32))
     login_session['state'] = state
@@ -44,11 +39,14 @@ def show_login():
 # login logic
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
+    """user login to their google account"""
+    # check request's state is same as current session's state
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
 
+    # validate client secrets
     code = request.data
     try:
         oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
@@ -60,17 +58,20 @@ def gconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
 
+    # get access token from client secret
     access_token = credentials.access_token
     url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={}'
            .format(access_token))
-    h = httplib2.Http()
-    result = json.loads(h.request(url, 'GET')[1])
+    http = httplib2.Http()
+    result = json.loads(http.request(url, 'GET')[1])
 
+    # check access token has error
     if result.get('error') is not None:
         response = make_response(json.dumps(result.get('error')), 500)
         response.headers['Content-Type'] = 'application/json'
         return response
 
+    # validate user id with token's id
     gplus_id = credentials.id_token['sub']
     if result['user_id'] != gplus_id:
         response = make_response(
@@ -78,12 +79,14 @@ def gconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
 
+    # make sure token is issued to client
     if result['issued_to'] != CLIENT_ID:
         response = make_response(
             json.dumps("Token's client ID does not match app's."), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
 
+    # check if same user tries to login again
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
@@ -97,14 +100,16 @@ def gconnect():
 
     user_info_url = "https://www.googleapis.com/oauth2/v1/userinfo"
     params = {'access_token': credentials.access_token, 'alt': 'json'}
-    answer = requests.get(user_info_url, params=params)
+    user_info = requests.get(user_info_url, params=params)
 
-    data = answer.json()
+    user_info_data = user_info.json()
 
-    login_session['username'] = data['name']
-    login_session['picture'] = data['picture']
-    login_session['email'] = data['email']
+    # store user info in login session
+    login_session['username'] = user_info_data['name']
+    login_session['picture'] = user_info_data['picture']
+    login_session['email'] = user_info_data['email']
 
+    # display user info
     output = '<h1>user name: {}</h1>'.format(login_session['username'])
     output += '<img src="'
     output += login_session['picture']
@@ -117,6 +122,8 @@ def gconnect():
 
 @app.route('/gdisconnect')
 def gdisconnect():
+    """user disconnect from their google account"""
+    # check if current session has access token
     access_token = login_session.get('access_token')
     if access_token is None:
         flash('Access Token is None')
@@ -143,6 +150,7 @@ def gdisconnect():
 @app.route('/')
 @app.route('/catalog/')
 def show_catalog():
+    """display all categories and latest items"""
     session = DBSession()
     categories = session.query(Category)
     items = session.query(Item)
@@ -158,6 +166,7 @@ def show_catalog():
 
 @app.route('/catalog/new/', methods=['GET', 'POST'])
 def new_category():
+    """create a new category"""
     if 'username' not in login_session:
         return redirect('/login')
     if request.method == 'POST':
@@ -174,6 +183,7 @@ def new_category():
 
 @app.route('/catalog/<int:category_id>/edit/', methods=['GET', 'POST'])
 def edit_category(category_id):
+    """edit an exiting category"""
     if 'username' not in login_session:
         return redirect('/login')
     session = DBSession()
@@ -192,6 +202,7 @@ def edit_category(category_id):
 
 @app.route('/catalog/<int:category_id>/delete/', methods=['GET', 'POST'])
 def delete_category(category_id):
+    """delete an existing category"""
     if 'username' not in login_session:
         return redirect('/login')
     session = DBSession()
@@ -215,6 +226,7 @@ def delete_category(category_id):
 @app.route('/catalog/<int:category_id>/')
 @app.route('/catalog/<int:category_id>/items/')
 def show_items(category_id):
+    """show all items in a category"""
     session = DBSession()
     category = session.query(Category).filter_by(id=category_id).one()
     items = session.query(Item).filter_by(category_id=category_id).all()
@@ -224,6 +236,7 @@ def show_items(category_id):
 
 @app.route('/catalog/<int:category_id>/items/<int:item_id>/')
 def show_item_detail(category_id, item_id):
+    """show item's name and description"""
     session = DBSession()
     category = session.query(Category).filter_by(id=category_id).one()
     item = session.query(Item).filter_by(id=item_id).one()
@@ -233,6 +246,7 @@ def show_item_detail(category_id, item_id):
 
 @app.route('/catalog/<int:category_id>/items/new/', methods=['GET', 'POST'])
 def new_item(category_id):
+    """create a new item by the logged in user"""
     if 'username' not in login_session:
         return redirect('/login')
     session = DBSession()
@@ -256,6 +270,7 @@ def new_item(category_id):
 @app.route('/catalog/<int:category_id>/items/<int:item_id>/edit/',
            methods=['GET', 'POST'])
 def edit_item(category_id, item_id):
+    """edit an item if logged in user is owner"""
     if 'username' not in login_session:
         return redirect('/login')
     session = DBSession()
@@ -284,6 +299,7 @@ def edit_item(category_id, item_id):
 @app.route('/catalog/<int:category_id>/items/<int:item_id>/delete/',
            methods=['GET', 'POST'])
 def delete_item(category_id, item_id):
+    """delete an item if logged in user is owner"""
     if 'username' not in login_session:
         return redirect('/login')
     session = DBSession()
@@ -303,6 +319,7 @@ def delete_item(category_id, item_id):
 # json api
 @app.route('/catalog.json')
 def catalog_json():
+    """json endpoint for catalog"""
     session = DBSession()
     categories = session.query(Category).all()
     session.close()
@@ -311,6 +328,7 @@ def catalog_json():
 
 @app.route('/catalog/<int:category_id>/items.json')
 def items_json(category_id):
+    """json endpoint for items in a category"""
     session = DBSession()
     items = session.query(Item).filter_by(category_id=category_id).all()
     session.close()
@@ -319,6 +337,7 @@ def items_json(category_id):
 
 @app.route('/catalog/<int:category_id>/items/<int:item_id>.json')
 def item_json(category_id, item_id):
+    """json endpoint for one item"""
     session = DBSession()
     item = session.query(Item).filter_by(id=item_id).one()
     session.close()

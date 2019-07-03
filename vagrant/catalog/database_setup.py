@@ -8,6 +8,7 @@ Base = declarative_base()
 
 
 class Category(Base):
+    """category in catalog"""
     __tablename__ = 'category'
 
     id = Column(Integer, primary_key=True)
@@ -15,6 +16,7 @@ class Category(Base):
 
     @property
     def serialize(self):
+        """serialize the category object"""
         return {
             'name': self.name,
             'id': self.id,
@@ -22,6 +24,7 @@ class Category(Base):
 
 
 class Item(Base):
+    """item in a category"""
     __tablename__ = 'items'
 
     id = Column(Integer, primary_key=True)
@@ -34,6 +37,7 @@ class Item(Base):
 
     @property
     def serialize(self):
+        """serialize the item object"""
         return {
             'name': self.name,
             'id': self.id,
