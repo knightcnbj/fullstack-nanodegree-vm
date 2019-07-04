@@ -35,6 +35,10 @@ DBSession = sessionmaker(bind=engine)
 
 
 def login_required(f):
+    """ redirect to login page if user is not logged in
+    Returns:
+        login page
+    """
     @wraps(f)
     def decorated_function():
         if 'username' not in login_session:
@@ -44,7 +48,10 @@ def login_required(f):
 
 @app.route('/login')
 def show_login():
-    """login page"""
+    """ login page
+    Returns:
+        page with link to google sign in.
+    """
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in range(32))
     login_session['state'] = state
@@ -54,7 +61,10 @@ def show_login():
 # login logic
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
-    """user login to their google account"""
+    """ user login to their google account
+    Returns:
+        user info and profile picture
+    """
     # check request's state is same as current session's state
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -137,7 +147,10 @@ def gconnect():
 
 @app.route('/gdisconnect')
 def gdisconnect():
-    """user disconnect from their google account"""
+    """ user disconnect from their google account
+    Returns:
+        home page
+    """
     # check if current session has access token
     access_token = login_session.get('access_token')
     if access_token is None:
@@ -165,7 +178,10 @@ def gdisconnect():
 @app.route('/')
 @app.route('/catalog/')
 def show_catalog():
-    """display all categories and latest items"""
+    """ display all categories and latest items
+    Returns:
+        home page
+    """
     session = DBSession()
     categories = session.query(Category)
     items = session.query(Item)
@@ -182,7 +198,12 @@ def show_catalog():
 @login_required
 @app.route('/catalog/new/', methods=['GET', 'POST'])
 def new_category():
-    """create a new category"""
+    """ create a new category
+    Returns:
+        on POST: redirect to home page after category is created
+        on GET: page with a form to create new category
+        login page if user is not logged in
+    """
     if 'username' not in login_session:
         return redirect('/login')
     if request.method == 'POST':
@@ -201,7 +222,15 @@ def new_category():
 @login_required
 @app.route('/catalog/<int:category_id>/edit/', methods=['GET', 'POST'])
 def edit_category(category_id):
-    """edit an exiting category"""
+    """ edit an exiting category
+    Args:
+        category_id: id of current category
+    Returns:
+        on POST: redirect to home page after category is edited
+        on GET: page to edit the category
+        login page if user is not logged in
+        unauthorized page if user is not owner of current category
+    """
     if 'username' not in login_session:
         return redirect('/login')
     session = DBSession()
@@ -223,7 +252,15 @@ def edit_category(category_id):
 @login_required
 @app.route('/catalog/<int:category_id>/delete/', methods=['GET', 'POST'])
 def delete_category(category_id):
-    """delete an existing category"""
+    """ delete an existing category
+    Args:
+        category_id: id of current category
+    Returns:
+        on POST: redirect to home page after category is deleted
+        on GET: page to delete the category
+        login page if user is not logged in
+        unauthorized page if user is not owner of current category
+    """
     if 'username' not in login_session:
         return redirect('/login')
     session = DBSession()
@@ -249,7 +286,12 @@ def delete_category(category_id):
 @app.route('/catalog/<int:category_id>/')
 @app.route('/catalog/<int:category_id>/items/')
 def show_items(category_id):
-    """show all items in a category"""
+    """ show all items in a category
+    Args:
+        category_id: id of current category
+    Returns:
+        page showing items under a category
+    """
     session = DBSession()
     category = session.query(Category).filter_by(id=category_id).one()
     items = session.query(Item).filter_by(category_id=category_id).all()
@@ -259,7 +301,13 @@ def show_items(category_id):
 
 @app.route('/catalog/<int:category_id>/items/<int:item_id>/')
 def show_item_detail(category_id, item_id):
-    """show item's name and description"""
+    """ show item's name and description
+    Args:
+        category_id: id of current category
+        item_id: id of current item
+    Returns:
+        page with item name and description
+    """
     session = DBSession()
     category = session.query(Category).filter_by(id=category_id).one()
     item = session.query(Item).filter_by(id=item_id).one()
@@ -270,7 +318,15 @@ def show_item_detail(category_id, item_id):
 @login_required
 @app.route('/catalog/<int:category_id>/items/new/', methods=['GET', 'POST'])
 def new_item(category_id):
-    """create a new item by the logged in user"""
+    """ create a new item by the logged in user
+    Args:
+        category_id: id of current item's category
+    Return:
+        on POST: redirect to category page after item is created
+        on GET: page to create the item
+        login page if user is not logged in
+        unauthorized page if user is not owner of current user
+    """
     if 'username' not in login_session:
         return redirect('/login')
     session = DBSession()
@@ -297,7 +353,16 @@ def new_item(category_id):
 @app.route('/catalog/<int:category_id>/items/<int:item_id>/edit/',
            methods=['GET', 'POST'])
 def edit_item(category_id, item_id):
-    """edit an item if logged in user is owner"""
+    """ edit an item if logged in user is owner
+    Args:
+        category_id: id of current item's category
+        item_id: id of current item
+    Return:
+        on POST: redirect to category page after item is edited
+        on GET: page to edit the item
+        login page if user is not logged in
+        unauthorized page if user is not owner of current user
+    """
     if 'username' not in login_session:
         return redirect('/login')
     session = DBSession()
@@ -327,7 +392,16 @@ def edit_item(category_id, item_id):
 @app.route('/catalog/<int:category_id>/items/<int:item_id>/delete/',
            methods=['GET', 'POST'])
 def delete_item(category_id, item_id):
-    """delete an item if logged in user is owner"""
+    """ delete an item if logged in user is owner
+    Args:
+        category_id: id of current item's category
+        item_id: id of current item
+    Return:
+        on POST: redirect to category page after item is deleted
+        on GET: page to delete the item
+        login page if user is not logged in
+        unauthorized page if user is not owner of current user
+    """
     if 'username' not in login_session:
         return redirect('/login')
     session = DBSession()
@@ -347,7 +421,10 @@ def delete_item(category_id, item_id):
 # json api
 @app.route('/catalog.json')
 def catalog_json():
-    """json endpoint for catalog"""
+    """ json endpoint for catalog
+    Returns:
+        json object of catalog
+    """
     session = DBSession()
     categories = session.query(Category).all()
     session.close()
@@ -356,7 +433,12 @@ def catalog_json():
 
 @app.route('/catalog/<int:category_id>/items.json')
 def items_json(category_id):
-    """json endpoint for items in a category"""
+    """ json endpoint for items in a category
+    Args:
+        category_id: id of current category
+    Returns:
+        json object of a category
+    """
     session = DBSession()
     items = session.query(Item).filter_by(category_id=category_id).all()
     session.close()
@@ -365,7 +447,13 @@ def items_json(category_id):
 
 @app.route('/catalog/<int:category_id>/items/<int:item_id>.json')
 def item_json(category_id, item_id):
-    """json endpoint for one item"""
+    """ json endpoint for one item
+    Args:
+        category_id: id of item's category
+        item_id: id of item
+    Returns:
+        json object of an item
+    """
     session = DBSession()
     item = session.query(Item).filter_by(id=item_id).one()
     session.close()
