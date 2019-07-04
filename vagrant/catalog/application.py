@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
-from flask import Flask, render_template, request, \
-    redirect, jsonify, url_for, flash, make_response
-from flask import session as login_session
+from flask import (Flask,
+                   render_template,
+                   request,
+                   redirect,
+                   jsonify,
+                   url_for,
+                   flash,
+                   make_response,
+                   session as login_session)
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -14,6 +20,7 @@ from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
 import httplib2
 import json
 import requests
+from functools import wraps
 
 
 app = Flask(__name__)
@@ -25,6 +32,14 @@ APPLICATION_NAME = "Catalog App"
 engine = create_engine('sqlite:///catalog.db')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function():
+        if 'username' not in login_session:
+            return redirect('/login')
+    return decorated_function
 
 
 @app.route('/login')
@@ -164,6 +179,7 @@ def show_catalog():
                            itemCategoryPairs=item_category_pairs)
 
 
+@login_required
 @app.route('/catalog/new/', methods=['GET', 'POST'])
 def new_category():
     """create a new category"""
@@ -171,7 +187,8 @@ def new_category():
         return redirect('/login')
     if request.method == 'POST':
         session = DBSession()
-        new_cate = Category(name=request.form['name'])
+        new_cate = Category(name=request.form['name'],
+                            user_email=login_session['email'])
         session.add(new_cate)
         session.commit()
         flash('New Category {} Created'.format(new_cate.name))
@@ -181,6 +198,7 @@ def new_category():
         return render_template('new_category.html')
 
 
+@login_required
 @app.route('/catalog/<int:category_id>/edit/', methods=['GET', 'POST'])
 def edit_category(category_id):
     """edit an exiting category"""
@@ -188,6 +206,8 @@ def edit_category(category_id):
         return redirect('/login')
     session = DBSession()
     edited_category = session.query(Category).filter_by(id=category_id).one()
+    if edited_category.user_email != login_session['email']:
+        return render_template('unauthorized.html')
     if request.method == 'POST':
         if request.form['name']:
             edited_category.name = request.form['name']
@@ -200,6 +220,7 @@ def edit_category(category_id):
         return render_template('edit_category.html', category=edited_category)
 
 
+@login_required
 @app.route('/catalog/<int:category_id>/delete/', methods=['GET', 'POST'])
 def delete_category(category_id):
     """delete an existing category"""
@@ -208,6 +229,8 @@ def delete_category(category_id):
     session = DBSession()
     deleted_category = \
         session.query(Category).filter_by(id=category_id).one()
+    if deleted_category.user_email != login_session['email']:
+        return render_template('unauthorized.html')
     category_items = \
         session.query(Item).filter_by(category_id=category_id).all()
     if request.method == 'POST':
@@ -244,6 +267,7 @@ def show_item_detail(category_id, item_id):
     return render_template('item_detail.html', category=category, item=item)
 
 
+@login_required
 @app.route('/catalog/<int:category_id>/items/new/', methods=['GET', 'POST'])
 def new_item(category_id):
     """create a new item by the logged in user"""
@@ -251,6 +275,8 @@ def new_item(category_id):
         return redirect('/login')
     session = DBSession()
     category = session.query(Category).filter_by(id=category_id).one()
+    if category.user_email != login_session['email']:
+        return render_template('unauthorized.html')
     if request.method == 'POST':
         item = Item(
             name=request.form['name'],
@@ -267,6 +293,7 @@ def new_item(category_id):
         return render_template('new_item.html', category=category)
 
 
+@login_required
 @app.route('/catalog/<int:category_id>/items/<int:item_id>/edit/',
            methods=['GET', 'POST'])
 def edit_item(category_id, item_id):
@@ -296,6 +323,7 @@ def edit_item(category_id, item_id):
                                categories=categories)
 
 
+@login_required
 @app.route('/catalog/<int:category_id>/items/<int:item_id>/delete/',
            methods=['GET', 'POST'])
 def delete_item(category_id, item_id):

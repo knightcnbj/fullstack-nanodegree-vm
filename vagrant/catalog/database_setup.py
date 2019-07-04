@@ -13,6 +13,7 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False)
+    user_email = Column(String(250), nullable=False)
 
     @property
     def serialize(self):
@@ -20,6 +21,7 @@ class Category(Base):
         return {
             'name': self.name,
             'id': self.id,
+            'user_email': self.user_email,
         }
 
 

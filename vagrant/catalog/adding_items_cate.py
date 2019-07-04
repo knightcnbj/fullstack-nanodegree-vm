@@ -11,7 +11,7 @@ DBSession = sessionmaker(bind=engine)
 print('start adding category and item into db')
 session = DBSession()
 
-cate1 = Category(name="Soccer")
+cate1 = Category(name="Soccer", user_email="system")
 session.add(cate1)
 session.commit()
 
@@ -19,7 +19,7 @@ item1 = Item(name="Shoes", description="i love soccer", category=cate1, user_ema
 session.add(item1)
 session.commit()
 
-cate2 = Category(name="BasketBall")
+cate2 = Category(name="BasketBall", user_email="system")
 session.add(cate2)
 session.commit()
 
