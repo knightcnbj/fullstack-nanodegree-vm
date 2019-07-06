@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 
+
 Base = declarative_base()
 
 
@@ -48,5 +49,6 @@ class Item(Base):
         }
 
 
-engine = create_engine('sqlite:///catalog.db')
+# engine = create_engine('sqlite:///catalog.db')
+engine = create_engine('postgresql://catalog:catalog@localhost/catalog')
 Base.metadata.create_all(engine)
