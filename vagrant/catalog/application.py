@@ -24,12 +24,14 @@ from functools import wraps
 
 
 app = Flask(__name__)
+app.secret_key = 'secret_key'
 
-CLIENT_ID = json.loads(open('client_secrets.json', 'r')
+CLIENT_ID = json.loads(open('/var/www/fullstack-nanodegree-vm/vagrant/catalog/client_secrets.json', 'r')
                        .read())['web']['client_id']
 APPLICATION_NAME = "Catalog App"
 
 engine = create_engine('postgresql://catalog:catalog_ps@localhost/catalog_db')
+#engine = create_engine('sqlite:///catalog.db')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 
@@ -74,7 +76,7 @@ def gconnect():
     # validate client secrets
     code = request.data
     try:
-        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow = flow_from_clientsecrets('/var/www/fullstack-nanodegree-vm/vagrant/catalog/client_secrets.json', scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError:
@@ -463,6 +465,6 @@ def item_json(category_id, item_id):
 if __name__ == '__main__':
     host = '0.0.0.0'
     port = 8000
-    app.secret_key = 'secret_key'
+    #app.secret_key = 'secret_key'
     app.debug = True
     app.run(host=host, port=port)
